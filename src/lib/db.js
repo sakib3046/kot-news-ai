@@ -1,0 +1,360 @@
+import { supabase } from './supabase'
+
+// Database helper functions - Using JavaScript to bypass strict Supabase TypeScript typing
+// In production, use: npx supabase gen types typescript --project-id <your-project-id> > src/lib/database.types.ts
+
+// Get a fresh Supabase client instance
+const getClient = () => (typeof supabase === 'function' ? supabase() : supabase)
+
+// ============= RSSFeed Operations =============
+
+export async function getRSSFeeds() {
+  const { data, error } = await getClient()
+    .from('rss_feeds')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(`Failed to fetch RSS feeds: ${error.message}`)
+  return data ?? []
+}
+
+export async function getActiveRSSFeeds() {
+  const { data, error } = await supabase
+    .from('rss_feeds')
+    .select('*')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(`Failed to fetch active RSS feeds: ${error.message}`)
+  return data ?? []
+}
+
+export async function createRSSFeed(feed) {
+  const { data, error } = await supabase
+    .from('rss_feeds')
+    .insert([
+      {
+        name: feed.name,
+        url: feed.url,
+        category: feed.category || 'tech',
+        is_active: true,
+      },
+    ])
+    .select()
+
+  if (error) throw new Error(`Failed to create RSS feed: ${error.message}`)
+  return data?.[0]
+}
+
+export async function updateRSSFeed(id, updates) {
+  const { data, error } = await supabase
+    .from('rss_feeds')
+    .update(updates)
+    .eq('id', id)
+    .select()
+
+  if (error) throw new Error(`Failed to update RSS feed: ${error.message}`)
+  return data?.[0]
+}
+
+export async function deleteRSSFeed(id) {
+  const { error } = await getClient().from('rss_feeds').delete().eq('id', id)
+
+  if (error) throw new Error(`Failed to delete RSS feed: ${error.message}`)
+}
+
+// ============= Article Operations =============
+
+export async function getArticles(filters) {
+  let query = supabase.from('articles').select('*, rss_feeds(name)', { count: 'exact' })
+
+  if (filters?.posted !== undefined) {
+    query = query.eq('posted', filters.posted)
+  }
+  if (filters?.aiEnhanced !== undefined) {
+    query = query.eq('ai_enhanced', filters.aiEnhanced)
+  }
+
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(filters?.offset || 0, (filters?.offset || 0) + (filters?.limit || 50) - 1)
+
+  if (error) throw new Error(`Failed to fetch articles: ${error.message}`)
+  return { articles: data ?? [], total: count ?? 0 }
+}
+
+export async function getArticleById(id) {
+  const { data, error } = await supabase
+    .from('articles')
+    .select('*, rss_feeds(name)')
+    .eq('id', id)
+    .single()
+
+  if (error) throw new Error(`Failed to fetch article: ${error.message}`)
+  return data
+}
+
+export async function createArticle(article) {
+  const { data, error } = await supabase
+    .from('articles')
+    .insert([
+      {
+        feed_id: article.feedId,
+        title: article.title,
+        description: article.description,
+        original_link: article.originalLink,
+        image_url: article.imageUrl,
+        pub_date: article.pubDate,
+        guid: article.guid,
+        source: article.source,
+      },
+    ])
+    .select()
+
+  if (error) throw new Error(`Failed to create article: ${error.message}`)
+  return data?.[0]
+}
+
+export async function updateArticle(id, updates) {
+  const mappedUpdates = {}
+
+  if (updates.aiTitle !== undefined) mappedUpdates.ai_title = updates.aiTitle
+  if (updates.aiSubtitle !== undefined) mappedUpdates.ai_subtitle = updates.aiSubtitle
+  if (updates.aiEnhanced !== undefined) mappedUpdates.ai_enhanced = updates.aiEnhanced
+  if (updates.posted !== undefined) mappedUpdates.posted = updates.posted
+  if (updates.facebookPostId !== undefined) mappedUpdates.facebook_post_id = updates.facebookPostId
+  if (updates.generatedImage !== undefined) mappedUpdates.generated_image = updates.generatedImage
+  if (updates.postedAt !== undefined) mappedUpdates.posted_at = updates.postedAt
+
+  const { data, error } = await supabase
+    .from('articles')
+    .update(mappedUpdates)
+    .eq('id', id)
+    .select()
+
+  if (error) throw new Error(`Failed to update article: ${error.message}`)
+  return data?.[0]
+}
+
+export async function deleteArticle(id) {
+  const { error } = await getClient().from('articles').delete().eq('id', id)
+
+  if (error) throw new Error(`Failed to delete article: ${error.message}`)
+}
+
+// ============= FacebookPost Operations =============
+
+export async function getFacebookPosts(limit) {
+  const { data, error } = await supabase
+    .from('facebook_posts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit || 50)
+
+  if (error) throw new Error(`Failed to fetch Facebook posts: ${error.message}`)
+  return data ?? []
+}
+
+export async function createFacebookPost(post) {
+  const { data, error } = await supabase
+    .from('facebook_posts')
+    .insert([
+      {
+        article_id: post.articleId,
+        facebook_post_id: post.facebookPostId,
+        page_id: post.pageId,
+        caption: post.caption,
+        image_url: post.imageUrl,
+      },
+    ])
+    .select()
+
+  if (error) throw new Error(`Failed to create Facebook post: ${error.message}`)
+  return data?.[0]
+}
+
+export async function updateFacebookPost(id, updates) {
+  const { data, error } = await supabase
+    .from('facebook_posts')
+    .update(updates)
+    .eq('id', id)
+    .select()
+
+  if (error) throw new Error(`Failed to update Facebook post: ${error.message}`)
+  return data?.[0]
+}
+
+// ============= ImageTemplate Operations =============
+
+export async function getImageTemplates() {
+  const { data, error } = await supabase
+    .from('image_templates')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(`Failed to fetch image templates: ${error.message}`)
+  return data ?? []
+}
+
+export async function getActiveImageTemplate() {
+  const { data, error } = await supabase
+    .from('image_templates')
+    .select('*')
+    .eq('is_active', true)
+    .single()
+
+  if (error) {
+    console.warn('No active image template found:', error.message)
+    return null
+  }
+  return data
+}
+
+export async function createImageTemplate(template) {
+  const { data, error } = await supabase
+    .from('image_templates')
+    .insert([
+      {
+        name: template.name,
+        template_path: template.templatePath,
+        logo_url: template.logoUrl,
+        primary_color: template.primaryColor || '#1a1a1a',
+        secondary_color: template.secondaryColor || '#ffffff',
+        accent_color: template.accentColor || '#0066cc',
+        is_active: true,
+      },
+    ])
+    .select()
+
+  if (error) throw new Error(`Failed to create image template: ${error.message}`)
+  return data?.[0]
+}
+
+export async function updateImageTemplate(id, updates) {
+  const mappedUpdates = {}
+
+  if (updates.name !== undefined) mappedUpdates.name = updates.name
+  if (updates.primaryColor !== undefined) mappedUpdates.primary_color = updates.primaryColor
+  if (updates.secondaryColor !== undefined) mappedUpdates.secondary_color = updates.secondaryColor
+  if (updates.accentColor !== undefined) mappedUpdates.accent_color = updates.accentColor
+  if (updates.isActive !== undefined) mappedUpdates.is_active = updates.isActive
+
+  const { data, error } = await supabase
+    .from('image_templates')
+    .update(mappedUpdates)
+    .eq('id', id)
+    .select()
+
+  if (error) throw new Error(`Failed to update image template: ${error.message}`)
+  return data?.[0]
+}
+
+// ============= JobLog Operations =============
+
+export async function getJobLogs(limit) {
+  const { data, error } = await supabase
+    .from('job_logs')
+    .select('*')
+    .order('started_at', { ascending: false })
+    .limit(limit || 50)
+
+  if (error) throw new Error(`Failed to fetch job logs: ${error.message}`)
+  return data ?? []
+}
+
+export async function createJobLog(job) {
+  const { data, error } = await supabase
+    .from('job_logs')
+    .insert([
+      {
+        job_type: job.jobType,
+        status: job.status || 'pending',
+        message: job.message,
+      },
+    ])
+    .select()
+
+  if (error) throw new Error(`Failed to create job log: ${error.message}`)
+  return data?.[0]
+}
+
+export async function updateJobLog(id, updates) {
+  const mappedUpdates = {}
+
+  if (updates.status !== undefined) mappedUpdates.status = updates.status
+  if (updates.message !== undefined) mappedUpdates.message = updates.message
+  if (updates.articlesProcessed !== undefined) mappedUpdates.articles_processed = updates.articlesProcessed
+  if (updates.imagesGenerated !== undefined) mappedUpdates.images_generated = updates.imagesGenerated
+  if (updates.postsCreated !== undefined) mappedUpdates.posts_created = updates.postsCreated
+  if (updates.completedAt !== undefined) mappedUpdates.completed_at = updates.completedAt
+  if (updates.error !== undefined) mappedUpdates.error = updates.error
+
+  const { data, error } = await supabase
+    .from('job_logs')
+    .update(mappedUpdates)
+    .eq('id', id)
+    .select()
+
+  if (error) throw new Error(`Failed to update job log: ${error.message}`)
+  return data?.[0]
+}
+
+// ============= Settings Operations =============
+
+export async function getSetting(key) {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('*')
+    .eq('key', key)
+    .single()
+
+  if (error) {
+    console.warn(`Setting not found: ${key}`)
+    return null
+  }
+  return data?.value
+}
+
+export async function getAllSettings() {
+  const { data, error } = await getClient().from('settings').select('*')
+
+  if (error) throw new Error(`Failed to fetch settings: ${error.message}`)
+
+  const result = {}
+  
+  ;(data ?? []).forEach((setting) => {
+    try {
+      if (setting.setting_type === 'number') {
+        result[setting.key] = Number(setting.value)
+      } else if (setting.setting_type === 'boolean') {
+        result[setting.key] = setting.value === 'true'
+      } else if (setting.setting_type === 'json') {
+        result[setting.key] = JSON.parse(setting.value)
+      } else {
+        result[setting.key] = setting.value
+      }
+    } catch {
+      result[setting.key] = setting.value
+    }
+  })
+
+  return result
+}
+
+export async function setSetting(key, value, type = 'string') {
+  const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
+
+  const { data, error } = await supabase
+    .from('settings')
+    .upsert([
+      {
+        key,
+        value: stringValue,
+        setting_type: type,
+      },
+    ])
+    .select()
+
+  if (error) throw new Error(`Failed to set setting: ${error.message}`)
+  return data?.[0]
+}
