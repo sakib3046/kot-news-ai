@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model RSSFeed {
+  id        String     @id @default(cuid())
+  name      String
+  url       String     @unique
+  category  String     @default("tech")
+  isActive  Boolean    @default(true)
+  articles  Article[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([isActive])
+}
+
+model Article {
+  id              String      @id @default(cuid())
+  feedId          String
+  feed            RSSFeed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  title           String      @db.Text
+  description     String?     @db.Text
+  originalLink    String      @unique
+  imageUrl        String?
+  pubDate         DateTime?
+  guid            String?
+  source          String?
+  aiTitle         String?     @db.Text
+  aiSubtitle      String?     @db.Text
+  aiEnhanced      Boolean     @default(false)
+  posted          Boolean     @default(false)
+  facebookPostId  String?
+  generatedImage  String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  postedAt        DateTime?
+
+  @@unique([feedId, guid])
+  @@index([posted])
+  @@index([createdAt])
+  @@index([aiEnhanced])
+}
+
+model FacebookPost {
+  id              String    @id @default(cuid())
+  articleId       String
+  facebookPostId  String    @unique
+  pageId          String
+  caption         String    @db.Text
+  imageUrl        String?
+  engagement      Int       @default(0)
+  shares          Int       @default(0)
+  comments        Int       @default(0)
+  reactions       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([pageId])
+  @@index([createdAt])
+}
+
+model ImageTemplate {
+  id              String    @id @default(cuid())
+  name            String    @unique
+  templatePath    String
+  logoUrl         String?
+  primaryColor    String    @default("#1a1a1a")
+  secondaryColor  String    @default("#ffffff")
+  accentColor     String    @default("#0066cc")
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model JobLog {
+  id          String    @id @default(cuid())
+  jobType     String
+  status      String    @default("pending")
+  message     String?   @db.Text
+  articlesProcessed Int @default(0)
+  imagesGenerated   Int @default(0)
+  postsCreated      Int @default(0)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  error       String?   @db.Text
+
+  @@index([jobType, status])
+}

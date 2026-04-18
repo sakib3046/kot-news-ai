@@ -1,0 +1,92 @@
+export const techRSSFeeds = [
+  {
+    name: "Hacker News",
+    url: "https://news.ycombinator.com/rss",
+    category: "tech",
+    priority: 10,
+  },
+  {
+    name: "TechCrunch",
+    url: "https://techcrunch.com/feed/",
+    category: "tech",
+    priority: 9,
+  },
+  {
+    name: "The Verge",
+    url: "https://www.theverge.com/rss/index.xml",
+    category: "tech",
+    priority: 9,
+  },
+  {
+    name: "ArsTechnica",
+    url: "https://arstechnica.com/feed/",
+    category: "tech",
+    priority: 8,
+  },
+  {
+    name: "CNET",
+    url: "https://www.cnet.com/rss/all/",
+    category: "tech",
+    priority: 8,
+  },
+  {
+    name: "Wired",
+    url: "https://www.wired.com/feed/rss",
+    category: "tech",
+    priority: 8,
+  },
+  {
+    name: "Dev.to Latest",
+    url: "https://dev.to/feed/tag/ai",
+    category: "ai",
+    priority: 7,
+  },
+  {
+    name: "Medium Technology",
+    url: "https://medium.com/feed/tag/technology",
+    category: "tech",
+    priority: 7,
+  },
+  {
+    name: "Product Hunt",
+    url: "https://www.producthunt.com/feed",
+    category: "startup",
+    priority: 7,
+  },
+  {
+    name: "MIT Technology Review",
+    url: "https://www.technologyreview.com/feed/",
+    category: "ai",
+    priority: 9,
+  },
+  {
+    name: "NVIDIA Blog",
+    url: "https://blogs.nvidia.com/feed/",
+    category: "ai",
+    priority: 8,
+  },
+  {
+    name: "OpenAI Blog",
+    url: "https://openai.com/blog/feed.xml",
+    category: "ai",
+    priority: 10,
+  },
+  {
+    name: "Google AI Blog",
+    url: "https://ai.googleblog.com/feeds/posts/default",
+    category: "ai",
+    priority: 10,
+  },
+  {
+    name: "AWS Blog",
+    url: "https://aws.amazon.com/blogs/aws/feed/",
+    category: "cloud",
+    priority: 8,
+  },
+  {
+    name: "GitHub Blog",
+    url: "https://github.blog/feed/",
+    category: "dev",
+    priority: 8,
+  },
+];
