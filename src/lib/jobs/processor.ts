@@ -32,6 +32,10 @@ export async function processNewArticlesJob() {
       },
     });
 
+    const activeTemplate = await prisma.imageTemplate.findFirst({
+      where: { isActive: true },
+    });
+
     console.log(
       `[CRON] Found ${unprocessedArticles.length} unprocessed articles`
     );
@@ -61,7 +65,10 @@ export async function processNewArticlesJob() {
           title: enhanced.title,
           subtitle: enhanced.subtitle,
           imageUrl: article.imageUrl || undefined,
-          logoUrl: undefined,
+          logoUrl: activeTemplate?.logoUrl || undefined,
+          primaryColor: activeTemplate?.primaryColor || undefined,
+          secondaryColor: activeTemplate?.secondaryColor || undefined,
+          accentColor: activeTemplate?.accentColor || undefined,
         });
 
         // Save image and get URL

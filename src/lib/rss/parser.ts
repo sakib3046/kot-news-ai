@@ -1,5 +1,5 @@
 import Parser from "rss-parser";
-import { techRSSFeeds } from "./feedConfig";
+import { rssFeeds } from "./feedConfig";
 import prisma from "@/lib/prisma";
 
 const parser = new Parser({
@@ -54,12 +54,12 @@ function getItemImage(item: Record<string, unknown>): string | undefined {
   return enclosure?.url || itunes?.image || media?.url;
 }
 
-export async function fetchAllTechNews(): Promise<
+export async function fetchAllNews(): Promise<
   Map<string, ParsedArticle[]>
 > {
   const allArticles = new Map<string, ParsedArticle[]>();
 
-  for (const feed of techRSSFeeds) {
+  for (const feed of rssFeeds) {
     const articles = await fetchAndParseRSSFeed(feed.url, feed.name);
     allArticles.set(feed.name, articles);
 
@@ -71,23 +71,22 @@ export async function fetchAllTechNews(): Promise<
 }
 
 export async function initializeRSSFeeds() {
-  // Initialize database with RSS feeds if they don't exist
-  for (const feed of techRSSFeeds) {
-    const existingFeed = await prisma.rSSFeed.findUnique({
+  // Initialize database with RSS feeds or update existing records
+  for (const feed of rssFeeds) {
+    await prisma.rSSFeed.upsert({
       where: { url: feed.url },
+      create: {
+        name: feed.name,
+        url: feed.url,
+        category: feed.category,
+        isActive: true,
+      },
+      update: {
+        name: feed.name,
+        category: feed.category,
+        isActive: true,
+      },
     });
-
-    if (!existingFeed) {
-      await prisma.rSSFeed.create({
-        data: {
-          name: feed.name,
-          url: feed.url,
-          category: feed.category,
-          isActive: true,
-        },
-      });
-      console.log(`Initialized RSS feed: ${feed.name}`);
-    }
   }
 }
 
@@ -96,6 +95,15 @@ export async function deduplicateAndSaveArticles(
 ) {
   const seenGuids = new Set<string>();
   const articlesToSave = [];
+
+  const feeds = await prisma.rSSFeed.findMany();
+  const feedMap = new Map(feeds.map((feed) => [feed.name, feed]));
+  const defaultFeedId = feeds.find((feed) => feed.isActive)?.id;
+
+  if (!defaultFeedId) {
+    console.error("No active RSS feeds found");
+    return [];
+  }
 
   for (const [source, sourceArticles] of articles) {
     for (const article of sourceArticles) {
@@ -112,6 +120,8 @@ export async function deduplicateAndSaveArticles(
       });
 
       if (!existingArticle && guid) {
+        const matchingFeed = feedMap.get(source);
+        const resolvedFeedId = matchingFeed?.id || defaultFeedId;
         seenGuids.add(guid);
         articlesToSave.push({
           title: article.title,
@@ -121,19 +131,10 @@ export async function deduplicateAndSaveArticles(
           pubDate: article.pubDate ? new Date(article.pubDate) : null,
           guid: guid,
           source: source,
+          feedId: resolvedFeedId,
         });
       }
     }
-  }
-
-  // Get the first feed to associate articles with
-  const defaultFeed = await prisma.rSSFeed.findFirst({
-    where: { isActive: true },
-  });
-
-  if (!defaultFeed) {
-    console.error("No active RSS feeds found");
-    return [];
   }
 
   // Save articles in batches
@@ -141,10 +142,7 @@ export async function deduplicateAndSaveArticles(
   for (const article of articlesToSave) {
     try {
       const saved = await prisma.article.create({
-        data: {
-          feedId: defaultFeed.id,
-          ...article,
-        },
+        data: article,
       });
       savedArticles.push(saved);
     } catch (error) {

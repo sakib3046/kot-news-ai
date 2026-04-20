@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  fetchAllTechNews,
+  fetchAllNews,
   deduplicateAndSaveArticles,
   initializeRSSFeeds,
 } from "@/lib/rss/parser";
 import prisma from "@/lib/prisma";
 import { createRateLimiter, rateLimitConfigs, handleRateLimitError } from "@/lib/rate-limiter";
+import { processNewArticlesJob } from "@/lib/jobs/processor";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     await initializeRSSFeeds();
 
     // Fetch all RSS feeds
-    const articles = await fetchAllTechNews();
+  const articles = await fetchAllNews();
 
     console.log(
       `[RSS ENDPOINT] Fetched articles from ${articles.size} sources`   
@@ -47,6 +48,12 @@ export async function POST(request: NextRequest) {
     const savedArticles = await deduplicateAndSaveArticles(articles);   
 
     console.log(`[RSS ENDPOINT] Saved ${savedArticles.length} new articles`);
+
+    let processingResult = null;
+    if (savedArticles.length > 0 && process.env.AUTO_POST_ON_RSS_FETCH !== "false") {
+      console.log("[RSS ENDPOINT] Triggering auto-processing job...");
+      processingResult = await processNewArticlesJob();
+    }
     
     // Get statistics
     const stats = await prisma.article.groupBy({
@@ -59,6 +66,7 @@ export async function POST(request: NextRequest) {
       newArticles: savedArticles.length,
       sourcesCount: articles.size,
       statistics: stats,
+      processing: processingResult,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

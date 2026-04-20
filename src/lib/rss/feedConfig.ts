@@ -1,4 +1,40 @@
-export const techRSSFeeds = [
+export const rssFeeds = [
+  {
+    name: "BBC News",
+    url: "https://feeds.bbci.co.uk/news/rss.xml",
+    category: "world",
+    priority: 10,
+  },
+  {
+    name: "Reuters Top News",
+    url: "https://feeds.reuters.com/reuters/topNews",
+    category: "world",
+    priority: 10,
+  },
+  {
+    name: "CNN Top Stories",
+    url: "http://rss.cnn.com/rss/edition.rss",
+    category: "world",
+    priority: 9,
+  },
+  {
+    name: "The Guardian World",
+    url: "https://www.theguardian.com/world/rss",
+    category: "world",
+    priority: 9,
+  },
+  {
+    name: "NYTimes Home",
+    url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+    category: "world",
+    priority: 8,
+  },
+  {
+    name: "Google News",
+    url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
+    category: "general",
+    priority: 8,
+  },
   {
     name: "Hacker News",
     url: "https://news.ycombinator.com/rss",
@@ -88,5 +124,53 @@ export const techRSSFeeds = [
     url: "https://github.blog/feed/",
     category: "dev",
     priority: 8,
+  },
+  {
+    name: "CNBC Top News",
+    url: "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    category: "business",
+    priority: 8,
+  },
+  {
+    name: "Financial Times",
+    url: "https://www.ft.com/?format=rss",
+    category: "business",
+    priority: 7,
+  },
+  {
+    name: "ESPN Top News",
+    url: "https://www.espn.com/espn/rss/news",
+    category: "sports",
+    priority: 7,
+  },
+  {
+    name: "BBC Sport",
+    url: "https://feeds.bbci.co.uk/sport/rss.xml",
+    category: "sports",
+    priority: 7,
+  },
+  {
+    name: "Variety",
+    url: "https://variety.com/feed/",
+    category: "entertainment",
+    priority: 7,
+  },
+  {
+    name: "ScienceDaily Top",
+    url: "https://www.sciencedaily.com/rss/top.xml",
+    category: "science",
+    priority: 7,
+  },
+  {
+    name: "Medical News Today",
+    url: "https://www.medicalnewstoday.com/rss",
+    category: "health",
+    priority: 6,
+  },
+  {
+    name: "Politico Picks",
+    url: "https://www.politico.com/rss/politicopicks.xml",
+    category: "politics",
+    priority: 6,
   },
 ];
