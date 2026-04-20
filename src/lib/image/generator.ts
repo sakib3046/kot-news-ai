@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { writeFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import fetch from "node-fetch";
 
@@ -45,7 +45,7 @@ export async function generateNewsImage(
       try {
         imageBuffer = await addImageOverlay(imageBuffer, imageUrl, width, height);
       } catch (error) {
-        console.warn("Could not add image overlay, using solid background");
+        console.warn("Could not add image overlay, using solid background", error);
       }
     }
 
@@ -186,8 +186,13 @@ async function addImageOverlay(
     const imageBuffer = await response.buffer();
 
     // Resize and composite
+    const overlayWidth = Math.round(width * 0.5);
+    const overlayHeight = Math.round(height * 0.5);
+    const overlayTop = Math.round(height * 0.25);
+    const overlayLeft = Math.round(width * 0.25);
+
     const resizedImage = await sharp(imageBuffer)
-      .resize(600, 315, {
+      .resize(overlayWidth, overlayHeight, {
         fit: "cover",
         position: "center",
       })
@@ -197,8 +202,8 @@ async function addImageOverlay(
       .composite([
         {
           input: resizedImage,
-          top: 157,
-          left: 300,
+          top: overlayTop,
+          left: overlayLeft,
         },
       ])
       .png()
@@ -225,6 +230,7 @@ export async function saveImageToFile(
   const publicDir = join(process.cwd(), "public", "generated");
   const filePath = join(publicDir, filename);
 
+  mkdirSync(publicDir, { recursive: true });
   writeFileSync(filePath, imageBuffer);
   return `/generated/${filename}`;
 }

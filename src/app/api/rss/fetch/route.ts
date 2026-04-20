@@ -5,17 +5,26 @@ import {
   initializeRSSFeeds,
 } from "@/lib/rss/parser";
 import prisma from "@/lib/prisma";
+import { createRateLimiter, rateLimitConfigs, handleRateLimitError } from "@/lib/rate-limiter";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
+const rssLimiter = createRateLimiter(rateLimitConfigs.api);
+
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimit = rssLimiter(request);
+    if (!rateLimit.allowed) {
+      return handleRateLimitError(rateLimit.remaining);
+    }
+
     // Verify authorization
     const authHeader = request.headers.get("authorization");
     const expectedSecret = process.env.CRON_SECRET;
 
-    if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+    if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {  
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -31,14 +40,14 @@ export async function POST(request: NextRequest) {
     const articles = await fetchAllTechNews();
 
     console.log(
-      `[RSS ENDPOINT] Fetched articles from ${articles.size} sources`
+      `[RSS ENDPOINT] Fetched articles from ${articles.size} sources`   
     );
 
     // Deduplicate and save articles
-    const savedArticles = await deduplicateAndSaveArticles(articles);
+    const savedArticles = await deduplicateAndSaveArticles(articles);   
 
     console.log(`[RSS ENDPOINT] Saved ${savedArticles.length} new articles`);
-
+    
     // Get statistics
     const stats = await prisma.article.groupBy({
       by: ["source"],
@@ -64,8 +73,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimit = rssLimiter(request);
+    if (!rateLimit.allowed) {
+      return handleRateLimitError(rateLimit.remaining);
+    }
+
     const stats = await prisma.article.groupBy({
       by: ["source"],
       _count: true,
@@ -90,7 +105,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json({
       status: "error",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : "Unknown error",  
     });
   }
 }

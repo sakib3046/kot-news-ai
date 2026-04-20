@@ -26,14 +26,14 @@ export async function fetchAndParseRSSFeed(feedUrl: string, feedName: string): P
     const articles: ParsedArticle[] = [];
 
     feed.items.forEach((item) => {
+      const image = getItemImage(item);
+
       articles.push({
         title: item.title || "Untitled",
         description: item.contentSnippet || item.content,
         link: item.link || "",
         pubDate: item.pubDate,
-        image: item.isoDate
-          ? item.enclosure?.url
-          : item.isoDate || undefined,
+        image,
         source: feedName,
         guid: item.guid || item.link,
       });
@@ -44,6 +44,14 @@ export async function fetchAndParseRSSFeed(feedUrl: string, feedName: string): P
     console.error(`Error fetching RSS feed ${feedName}:`, error);
     return [];
   }
+}
+
+function getItemImage(item: Record<string, unknown>): string | undefined {
+  const enclosure = item.enclosure as { url?: string } | undefined;
+  const itunes = item.itunes as { image?: string } | undefined;
+  const media = (item as Record<string, { url?: string }>)["media:content"];
+
+  return enclosure?.url || itunes?.image || media?.url;
 }
 
 export async function fetchAllTechNews(): Promise<

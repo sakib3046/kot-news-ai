@@ -19,7 +19,7 @@ export async function getRSSFeeds() {
 }
 
 export async function getActiveRSSFeeds() {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('rss_feeds')
     .select('*')
     .eq('is_active', true)
@@ -30,7 +30,7 @@ export async function getActiveRSSFeeds() {
 }
 
 export async function createRSSFeed(feed) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('rss_feeds')
     .insert([
       {
@@ -47,7 +47,7 @@ export async function createRSSFeed(feed) {
 }
 
 export async function updateRSSFeed(id, updates) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('rss_feeds')
     .update(updates)
     .eq('id', id)
@@ -63,12 +63,12 @@ export async function deleteRSSFeed(id) {
   if (error) throw new Error(`Failed to delete RSS feed: ${error.message}`)
 }
 
-// ============= Article Operations =============
+  // ============= Article Operations =============
 
-export async function getArticles(filters) {
-  let query = supabase.from('articles').select('*, rss_feeds(name)', { count: 'exact' })
+  export async function getArticles(filters) {
+    let query = getClient().from('articles').select('*, rss_feeds(name)', { count: 'exact' })
 
-  if (filters?.posted !== undefined) {
+    if (filters?.posted !== undefined) {
     query = query.eq('posted', filters.posted)
   }
   if (filters?.aiEnhanced !== undefined) {
@@ -84,7 +84,7 @@ export async function getArticles(filters) {
 }
 
 export async function getArticleById(id) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('articles')
     .select('*, rss_feeds(name)')
     .eq('id', id)
@@ -95,7 +95,7 @@ export async function getArticleById(id) {
 }
 
 export async function createArticle(article) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('articles')
     .insert([
       {
@@ -126,7 +126,7 @@ export async function updateArticle(id, updates) {
   if (updates.generatedImage !== undefined) mappedUpdates.generated_image = updates.generatedImage
   if (updates.postedAt !== undefined) mappedUpdates.posted_at = updates.postedAt
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('articles')
     .update(mappedUpdates)
     .eq('id', id)
@@ -145,7 +145,7 @@ export async function deleteArticle(id) {
 // ============= FacebookPost Operations =============
 
 export async function getFacebookPosts(limit) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('facebook_posts')
     .select('*')
     .order('created_at', { ascending: false })
@@ -156,7 +156,7 @@ export async function getFacebookPosts(limit) {
 }
 
 export async function createFacebookPost(post) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('facebook_posts')
     .insert([
       {
@@ -174,7 +174,7 @@ export async function createFacebookPost(post) {
 }
 
 export async function updateFacebookPost(id, updates) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('facebook_posts')
     .update(updates)
     .eq('id', id)
@@ -187,7 +187,7 @@ export async function updateFacebookPost(id, updates) {
 // ============= ImageTemplate Operations =============
 
 export async function getImageTemplates() {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('image_templates')
     .select('*')
     .order('created_at', { ascending: false })
@@ -197,7 +197,7 @@ export async function getImageTemplates() {
 }
 
 export async function getActiveImageTemplate() {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('image_templates')
     .select('*')
     .eq('is_active', true)
@@ -211,7 +211,7 @@ export async function getActiveImageTemplate() {
 }
 
 export async function createImageTemplate(template) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('image_templates')
     .insert([
       {
@@ -239,7 +239,7 @@ export async function updateImageTemplate(id, updates) {
   if (updates.accentColor !== undefined) mappedUpdates.accent_color = updates.accentColor
   if (updates.isActive !== undefined) mappedUpdates.is_active = updates.isActive
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('image_templates')
     .update(mappedUpdates)
     .eq('id', id)
@@ -252,7 +252,7 @@ export async function updateImageTemplate(id, updates) {
 // ============= JobLog Operations =============
 
 export async function getJobLogs(limit) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('job_logs')
     .select('*')
     .order('started_at', { ascending: false })
@@ -263,7 +263,7 @@ export async function getJobLogs(limit) {
 }
 
 export async function createJobLog(job) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('job_logs')
     .insert([
       {
@@ -289,7 +289,7 @@ export async function updateJobLog(id, updates) {
   if (updates.completedAt !== undefined) mappedUpdates.completed_at = updates.completedAt
   if (updates.error !== undefined) mappedUpdates.error = updates.error
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('job_logs')
     .update(mappedUpdates)
     .eq('id', id)
@@ -302,7 +302,7 @@ export async function updateJobLog(id, updates) {
 // ============= Settings Operations =============
 
 export async function getSetting(key) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('settings')
     .select('*')
     .eq('key', key)
@@ -344,7 +344,7 @@ export async function getAllSettings() {
 export async function setSetting(key, value, type = 'string') {
   const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('settings')
     .upsert([
       {

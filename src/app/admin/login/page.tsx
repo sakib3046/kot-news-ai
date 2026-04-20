@@ -1,106 +1,142 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const router = useRouter()
 
-  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+  // Check if already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Call the /api/auth/me endpoint which can read HTTP-only cookies
+        const response = await fetch('/api/auth/me', {
+          method: 'GET',
+          credentials: 'include',
+        })
+
+        const data = await response.json()
+
+        if (data.user) {
+          // User is already authenticated, redirect to dashboard
+          router.push('/admin/dashboard')
+        } else {
+          setCheckingAuth(false)
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err)
+        setCheckingAuth(false)
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
+    setError('')
 
     try {
-      const { data, error: signInError } = await supabase().auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
       })
 
-      if (signInError) throw signInError
-
-      if (data.session) {
+      if (response.ok) {
+        // Redirect to dashboard
         router.push('/admin/dashboard')
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Login failed')
+        setLoading(false)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
-    } finally {
+      console.error('Login error:', err)
+      setError('An error occurred. Please try again.')
       setLoading(false)
     }
   }
 
+  // Show loading spinner while checking authentication
+  if (checkingAuth) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '48px', height: '48px', border: '4px solid #ddd', borderTop: '4px solid #0066cc', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
+          <p style={{ color: '#666' }}>Checking authentication...</p>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-2xl p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
-            KOT News AI
-          </h1>
-          <p className="text-center text-gray-600 mb-8">Admin Dashboard</p>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                placeholder="admin@example.com"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                placeholder="••••••••"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 text-center">
-              Need to create an account?{' '}
-              <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                Contact your administrator
-              </a>
-            </p>
-          </div>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5', fontFamily: 'Arial, sans-serif', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '400px', backgroundColor: '#ffffff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', padding: '40px' }}>
+        <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '28px', color: '#333', margin: '0 0 10px 0' }}>KOT News AI</h1>
+          <p style={{ color: '#666', margin: '0', fontSize: '14px' }}>Admin Dashboard Login</p>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-400">
-          <p>Protected admin area - Authorized users only</p>
+        {error && (
+          <div style={{ backgroundColor: '#fee', color: '#c33', padding: '12px', borderRadius: '4px', marginBottom: '20px', fontSize: '14px' }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ backgroundColor: '#f0f7ff', border: '1px solid #b3d9ff', color: '#004080', padding: '12px', borderRadius: '4px', marginBottom: '20px', fontSize: '13px' }}>
+          <strong>Demo Credentials:</strong><br/>
+          Email: demo@kotai.example.com<br/>
+          Password: Demo@1234
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@example.com"
+              required
+              disabled={loading}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', boxSizing: 'border-box', backgroundColor: loading ? '#f9f9f9' : '#fff', color: '#333' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#333', fontWeight: 'bold' }}>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              required
+              disabled={loading}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', boxSizing: 'border-box', backgroundColor: loading ? '#f9f9f9' : '#fff', color: '#333' }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ padding: '12px', backgroundColor: loading ? '#ccc' : '#0066cc', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+
+        <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #eee', textAlign: 'center' }}>
+          <p style={{ color: '#999', fontSize: '12px', margin: '0' }}>Protected admin area - Authorized users only</p>
         </div>
       </div>
     </div>

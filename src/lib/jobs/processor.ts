@@ -107,13 +107,21 @@ export async function processNewArticlesJob() {
       try {
         console.log(`[CRON] Posting to Facebook: ${article.aiTitle}`);
 
-        const imageUrl = article.generatedImage
-          ? `${process.env.VERCEL_URL}${article.generatedImage}`
+        const baseUrl =
+          process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || "";
+        const normalizedBaseUrl = baseUrl
+          ? baseUrl.startsWith("http")
+            ? baseUrl
+            : `https://${baseUrl}`
           : "";
+        const imageUrl =
+          article.generatedImage && normalizedBaseUrl
+            ? `${normalizedBaseUrl}${article.generatedImage}`
+            : undefined;
 
         const facebookResult = await facebookAPI.publishPost(
           `${article.aiTitle}\n\n${article.aiSubtitle}`,
-          imageUrl,
+          imageUrl || "",
           article.originalLink
         );
 

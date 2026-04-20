@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processNewArticlesJob } from "@/lib/jobs/processor";
+import { createRateLimiter, rateLimitConfigs, handleRateLimitError } from "@/lib/rate-limiter";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes timeout for Vercel
 
+const cronLimiter = createRateLimiter(rateLimitConfigs.strict);
+
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimit = cronLimiter(request);
+    if (!rateLimit.allowed) {
+      return handleRateLimitError(rateLimit.remaining);
+    }
+
     // Verify request is from Vercel Cron
     const authHeader = request.headers.get("authorization");
     const expectedSecret = process.env.CRON_SECRET;
 
-    if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+    if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {  
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -37,9 +46,22 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  return NextResponse.json({
-    status: "ok",
-    endpoint: "/api/cron/process",
-    description: "Processes new articles and posts to Facebook",
-  });
+  try {
+    // Apply rate limiting
+    const rateLimit = cronLimiter(request);
+    if (!rateLimit.allowed) {
+      return handleRateLimitError(rateLimit.remaining);
+    }
+
+    return NextResponse.json({
+      status: "ok",
+      endpoint: "/api/cron/process",
+      description: "Processes new articles and posts to Facebook",        
+    });
+  } catch (error) {
+    return NextResponse.json({
+      status: "error",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 }

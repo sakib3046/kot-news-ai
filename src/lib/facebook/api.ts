@@ -60,14 +60,22 @@ export class FacebookAPI {
     link?: string
   ): Promise<{ success: boolean; postId?: string; error?: string }> {
     try {
+      const payload: Record<string, string> = {
+        message: caption,
+        access_token: this.pageAccessToken,
+      };
+
+      if (link) {
+        payload.link = link;
+      }
+
+      if (imageUrl) {
+        payload.picture = imageUrl;
+      }
+
       const response = await axios.post(
         `${FACEBOOK_GRAPH_API}/${this.pageId}/feed`,
-        {
-          message: caption,
-          link: link,
-          picture: imageUrl,
-          access_token: this.pageAccessToken,
-        }
+        payload
       );
 
       return {
