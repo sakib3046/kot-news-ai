@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     await initializeRSSFeeds();
 
     // Fetch all RSS feeds
-  const articles = await fetchAllNews();
+    const articles = await fetchAllNews();
 
     console.log(
       `[RSS ENDPOINT] Fetched articles from ${articles.size} sources`   
