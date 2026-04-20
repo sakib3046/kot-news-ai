@@ -22,17 +22,11 @@ export const rssFetchSchema = z.object({
   limit: z.number().int().min(1).max(100).optional().default(10),
 });
 
-// Cron validation schemas
-export const cronProcessSchema = z.object({
-  token: z.string().optional(),
-  type: z.enum(["rss", "ai", "facebook", "cleanup"]).optional(),
-});
 
 // Type exports
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RssSourceInput = z.infer<typeof rssSourceSchema>;
 export type RssFetchInput = z.infer<typeof rssFetchSchema>;
-export type CronProcessInput = z.infer<typeof cronProcessSchema>;
 
 // Validation helper with proper typing
 export function validateRequest<T>(

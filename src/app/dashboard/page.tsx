@@ -39,11 +39,13 @@ export default function Dashboard() {
 
   const triggerRSSFetch = async () => {
     try {
+      const headers: HeadersInit = {};
+      if (process.env.NEXT_PUBLIC_CRON_SECRET) {
+        headers.Authorization = `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET}`;
+      }
       const response = await fetch("/api/rss/fetch", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || ""}`,
-        },
+        headers,
       });
       if (!response.ok) throw new Error("Failed to trigger RSS fetch");
       const data = await response.json();
@@ -54,25 +56,8 @@ export default function Dashboard() {
     }
   };
 
-  const triggerProcessing = async () => {
-    try {
-      const response = await fetch("/api/cron/process", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || ""}`,
-        },
-      });
-      if (!response.ok) throw new Error("Failed to trigger processing");
-      const data = await response.json();
-      console.log("Processing result:", data);
-      await fetchStats();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Error triggering processing");
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
+  <div className="min-h-screen bg-linear-to-br from-slate-900 to-slate-800 p-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl font-bold text-white mb-2">
           KOT Tech News AI
@@ -85,12 +70,6 @@ export default function Dashboard() {
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition"
           >
             🔄 Fetch RSS Feeds
-          </button>
-          <button
-            onClick={triggerProcessing}
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition"
-          >
-            🚀 Process & Post
           </button>
         </div>
 
