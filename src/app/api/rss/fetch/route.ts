@@ -6,10 +6,11 @@ import {
 } from "@/lib/rss/parser";
 import prisma from "@/lib/prisma";
 import { createRateLimiter, rateLimitConfigs, handleRateLimitError } from "@/lib/rate-limiter";
-import { processNewArticlesJob } from "@/lib/jobs/processor";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const rssLimiter = createRateLimiter(rateLimitConfigs.api);
 
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
     let processingResult = null;
     if (savedArticles.length > 0 && process.env.AUTO_POST_ON_RSS_FETCH !== "false") {
       console.log("[RSS ENDPOINT] Triggering auto-processing job...");
+      const { processNewArticlesJob } = await import("@/lib/jobs/processor");
       processingResult = await processNewArticlesJob();
     }
     
